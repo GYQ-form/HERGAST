@@ -13,7 +13,7 @@ To install the package, run
 
 ```bash
 git clone https://github.com/GYQ-form/HERGAST.git
-cd HERGASAT
+cd HERGAST
 pip install .
 ```
 

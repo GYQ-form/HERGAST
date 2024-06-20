@@ -4,6 +4,7 @@ HERGAST: High-resolution Enhanced Relational Graph Attention Network for Spatial
 
 This document will help you easily go through the HERGAST model.
 
+![fig1](https://github.com/GYQ-form/HERGAST/assets/79566479/fe08a893-47ac-4fe9-ad25-51f808088748)
 
 
 ## Installation

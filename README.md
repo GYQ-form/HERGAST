@@ -1,6 +1,6 @@
 # HERGAST
 
-HERGAST: High-resolution Enhanced Relational Graph Attention Network for Spatial Transcriptomics
+HERGAST: High-resolution Enhanced Relational Graph Attention Network for Spatial Transcriptomics [[paper]](https://doi.org/10.1101/2024.08.09.607422)
 
 This document will help you easily go through the HERGAST model.
 

@@ -7,6 +7,19 @@ This document will help you easily go through the HERGAST model.
 ![fig1](https://github.com/GYQ-form/HERGAST/assets/79566479/fe08a893-47ac-4fe9-ad25-51f808088748)
 
 
+## Dependencies
+
+The required Python packages and versions tested in our study are:
+
+```
+pytorch==2.1.2
+scanpy==1.9.6
+scikit-learn==1.3.2
+pyg==2.4.0
+scipy==1.11.4
+numba==0.58.1
+```
+
 ## Installation
 
 To install the package, run

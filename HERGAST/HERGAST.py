@@ -12,9 +12,9 @@ class HERGAST(torch.nn.Module):
         super(HERGAST, self).__init__()
         [in_dim, num_hidden, out_dim] = hidden_dims
         self.conv1 = RGATConv(in_dim, num_hidden, num_relations=2, heads=1, concat=False,
-                              dropout=att_drop, add_self_loops=False, bias=False)
+                              dropout=att_drop, bias=False)
         self.conv2 = RGATConv(num_hidden, out_dim, num_relations=2, heads=1, concat=False,
-                              dropout=att_drop, add_self_loops=False, bias=False)
+                              dropout=att_drop, bias=False)
         if dim_reduce=='PCA':
             self.decoder = nn.Sequential(
                 nn.Linear(out_dim, num_hidden),

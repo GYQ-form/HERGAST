@@ -76,7 +76,7 @@ class Train_HERGAST:
 
     def train_HERGAST(self, save_path = None, hidden_dims=[100, 32], n_epochs=200, lr=0.001, 
                     key_added='HERGAST', att_drop = 0.3, gradient_clipping=5., weight_decay=0.0001,
-                    random_seed=0, save_loss=False, save_reconstrction=True, save_attention=False):
+                    random_seed=2024, save_loss=False, save_reconstrction=True, inference_device='cpu'):
 
         """\
         Training graph attention auto-encoder.
@@ -123,7 +123,10 @@ class Train_HERGAST:
         else:
             model = self.model.to(self.device)
             
-        data = self.data.to(self.device)
+        if inference_device=='cpu':
+            data = self.data.to('cpu')
+        else:
+            data = self.data.to(self.device)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
@@ -136,7 +139,7 @@ class Train_HERGAST:
                         batch = batch.to(self.device)
                         model.train()
                         optimizer.zero_grad()
-                        z, out, _, _ = model(batch.x, batch.edge_index, batch.edge_type)
+                        z, out = model(batch.x, batch.edge_index, batch.edge_type)
                         loss = F.mse_loss(batch.x, out) #F.nll_loss(out[data.train_mask], data.y[data.train_mask])
                         loss.backward()
                         loss_list.append(loss.item())
@@ -146,7 +149,7 @@ class Train_HERGAST:
                 else:
                     model.train()
                     optimizer.zero_grad()
-                    z, out, _, _ = model(data.x, data.edge_index, data.edge_type)
+                    z, out = model(data.x, data.edge_index, data.edge_type)
                     loss = F.mse_loss(data.x, out) #F.nll_loss(out[data.train_mask], data.y[data.train_mask])
                     loss.backward()
                     loss_list.append(loss.item())
@@ -154,14 +157,14 @@ class Train_HERGAST:
                     optimizer.step()
 
         with torch.no_grad():
-            if self.batch_data:
+            if inference_device=='cpu':
                 model.to('cpu')
                 model.eval()
-                z, out, att1, att2 = model(data.x.cpu(), data.edge_index.cpu(), data.edge_type.cpu())
+                z, out = model(data.x.cpu(), data.edge_index.cpu(), data.edge_type.cpu())
                 model.to(self.device)
             else:
                 model.eval()
-                z, out, att1, att2 = model(data.x, data.edge_index, data.edge_type)
+                z, out = model(data.x, data.edge_index, data.edge_type)
 
         HERGAST_rep = z.to('cpu').detach().numpy()
         self.adata.obsm[key_added] = HERGAST_rep
@@ -176,10 +179,6 @@ class Train_HERGAST:
                 idx = np.where(self.adata.X==0)
                 ReX[idx] = 0
             self.adata.obsm['HERGAST_ReX'] = ReX
-            
-        if save_attention:
-            self.adata.uns['att1'] = (att1[0].to('cpu').numpy(),att1[1].to('cpu').numpy())
-            self.adata.uns['att2'] = (att2[0].to('cpu').numpy(),att2[1].to('cpu').numpy())
 
         self.model = model
 

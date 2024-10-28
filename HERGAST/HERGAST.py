@@ -28,9 +28,9 @@ class HERGAST(torch.nn.Module):
             )                  
 
     def forward(self, features, edge_index, edge_type):
-        h1, att1 = self.conv1(features, edge_index, edge_type, return_attention_weights=True)
+        h1 = self.conv1(features, edge_index, edge_type)
         h1 = F.elu(h1)
-        h2, att2 = self.conv2(h1, edge_index, edge_type, return_attention_weights=True)
+        h2 = self.conv2(h1, edge_index, edge_type)
         h2 = F.elu(h2)
         h3 = self.decoder(h2)
-        return h2, h3, att1, att2
+        return h2, h3

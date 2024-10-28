@@ -8,6 +8,7 @@ from scipy.sparse.csc import csc_matrix
 from scipy.sparse.csr import csr_matrix
 import scanpy as sc
 import torch
+from sklearn.neighbors import NearestNeighbors
 from torch_geometric.data import Data
 import contextlib
 import io
@@ -114,7 +115,7 @@ def Batch_Data(adata, num_batch_x, num_batch_y, plot_Stats=False):
         sns.stripplot(y='#spot/batch', data=plot_df, ax=ax, color='red', size=5)
     return Batch_list
 
-def Cal_Spatial_Net(adata, rad_cutoff=None, k_cutoff=8, model='KNN', verbose=True):
+def Cal_Spatial_Net(adata, rad_cutoff=None, k_cutoff=4, model='KNN', verbose=True):
     """\
     Construct the spatial neighbor networks.
 
@@ -134,49 +135,49 @@ def Cal_Spatial_Net(adata, rad_cutoff=None, k_cutoff=8, model='KNN', verbose=Tru
     The spatial networks are saved in adata.uns['Spatial_Net']
     """
 
-    assert(model in ['Radius', 'KNN'])
+    assert model in ['Radius', 'KNN']
     if verbose:
         print('------Calculating spatial graph...')
-    coor = pd.DataFrame(adata.obsm['spatial'])
-    coor.index = adata.obs.index
-    coor.columns = ['imagerow', 'imagecol']
+    
+    coor = adata.obsm['spatial']
+    num_cells = coor.shape[0]
 
     if model == 'Radius':
-        nbrs = sklearn.neighbors.NearestNeighbors(radius=rad_cutoff).fit(coor)
+        nbrs = NearestNeighbors(radius=rad_cutoff).fit(coor)
         distances, indices = nbrs.radius_neighbors(coor, return_distance=True)
-        KNN_list = []
-        for it in range(indices.shape[0]):
-            KNN_list.append(pd.DataFrame(zip([it]*indices[it].shape[0], indices[it], distances[it])))
-    
-    if model == 'KNN':
-        nbrs = sklearn.neighbors.NearestNeighbors(n_neighbors=k_cutoff+1).fit(coor)
+    elif model == 'KNN':
+        nbrs = NearestNeighbors(n_neighbors=k_cutoff + 1).fit(coor)
         distances, indices = nbrs.kneighbors(coor)
-        KNN_list = []
-        for it in range(indices.shape[0]):
-            KNN_list.append(pd.DataFrame(zip([it]*indices.shape[1],indices[it,:], distances[it,:])))
 
-    KNN_df = pd.concat(KNN_list)
-    KNN_df.columns = ['Cell1', 'Cell2', 'Distance']
+    # Build the network
+    KNN_list = [
+        (i, indices[i][j], distances[i][j])
+        for i in range(num_cells)
+        for j in range(len(indices[i]))
+        if distances[i][j] > 0
+    ]
 
-    Spatial_Net = KNN_df.copy()
-    Spatial_Net = Spatial_Net.loc[Spatial_Net['Distance']>0,]
-    id_cell_trans = dict(zip(range(coor.shape[0]), np.array(coor.index), ))
-    Spatial_Net['Cell1'] = Spatial_Net['Cell1'].map(id_cell_trans)
-    Spatial_Net['Cell2'] = Spatial_Net['Cell2'].map(id_cell_trans)
+    KNN_df = pd.DataFrame(KNN_list, columns=['Cell1', 'Cell2', 'Distance'])
+
+    # Map indices to cell names
+    id_cell_trans = np.array(adata.obs.index)
+    KNN_df['Cell1'] = id_cell_trans[KNN_df['Cell1']]
+    KNN_df['Cell2'] = id_cell_trans[KNN_df['Cell2']]
+
     if verbose:
-        print('Spatial graph contains %d edges, %d cells.' %(Spatial_Net.shape[0], adata.n_obs))
-        print('%.4f neighbors per cell on average.' %(Spatial_Net.shape[0]/adata.n_obs))
+        print(f'Spatial graph contains {KNN_df.shape[0]} edges, {adata.n_obs} cells.')
+        print(f'{KNN_df.shape[0] / adata.n_obs:.4f} neighbors per cell on average.')
 
-    adata.uns['Spatial_Net'] = Spatial_Net
+    adata.uns['Spatial_Net'] = KNN_df
 
-def Cal_Expression_Net(adata, k_cutoff=6, dim_reduce=None, verbose=True):
+
+def Cal_Expression_Net(adata, k_cutoff=3, dim_reduce=None, verbose=True):
 
     if verbose:
         print('------Calculating Expression simalarity graph...')
 
     if dim_reduce=='PCA':
-        coor = pd.DataFrame(adata.obsm['X_pca'])
-        coor.index = adata.obs.index
+        coor = adata.obsm['X_pca']
     elif dim_reduce=='HVG':
         adata_Vars = adata[:, adata.var['highly_variable']]
         if isinstance(adata_Vars.X, csc_matrix) or isinstance(adata_Vars.X, csr_matrix):
@@ -193,31 +194,30 @@ def Cal_Expression_Net(adata, k_cutoff=6, dim_reduce=None, verbose=True):
             feat = adata.X.toarray()
         else:
             feat = adata.X
-        coor = pd.DataFrame(feat)
-        coor.index = adata.obs.index
-        coor.columns = adata.var_names
+        coor = feat
 
     n_nbrs = k_cutoff+1 if k_cutoff+1<coor.shape[0] else coor.shape[0]
     nbrs = sklearn.neighbors.NearestNeighbors(n_neighbors=n_nbrs).fit(coor)
     distances, indices = nbrs.kneighbors(coor)
-    KNN_list = []
-    for it in range(indices.shape[0]):
-        KNN_list.append(pd.DataFrame(zip([it]*indices.shape[1],indices[it,:], distances[it,:])))
-    KNN_df = pd.concat(KNN_list)
-    KNN_df.columns = ['Cell1', 'Cell2', 'Distance']
+    KNN_list = [
+        (i, indices[i][j], distances[i][j])
+        for i in range(coor.shape[0])
+        for j in range(len(indices[i]))
+        if distances[i][j] > 0
+    ]
 
-    exp_Net = KNN_df.copy()
-    exp_Net = exp_Net.loc[exp_Net['Distance']>0,]
+    KNN_df = pd.DataFrame(KNN_list, columns=['Cell1', 'Cell2', 'Distance'])
 
-    id_cell_trans = dict(zip(range(coor.shape[0]), np.array(coor.index), ))
-    exp_Net['Cell1'] = exp_Net['Cell1'].map(id_cell_trans)
-    exp_Net['Cell2'] = exp_Net['Cell2'].map(id_cell_trans)
+    # Map indices to cell names
+    id_cell_trans = np.array(adata.obs.index)
+    KNN_df['Cell1'] = id_cell_trans[KNN_df['Cell1']]
+    KNN_df['Cell2'] = id_cell_trans[KNN_df['Cell2']]
 
     if verbose:
-        print('Expression graph contains %d edges, %d cells.' %(exp_Net.shape[0], adata.n_obs))
-        print('%.4f neighbors per cell on average.' %(exp_Net.shape[0]/adata.n_obs))
+        print(f'Expression graph contains {KNN_df.shape[0]} edges, {adata.n_obs} cells.')
+        print(f'{KNN_df.shape[0] / adata.n_obs:.4f} neighbors per cell on average.')
 
-    adata.uns['Exp_Net'] = exp_Net
+    adata.uns['Exp_Net'] = KNN_df
     
 
 def cal_metagene(adata,gene_list,obs_name='metagene',layer=None):

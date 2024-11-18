@@ -8,7 +8,22 @@ import torch.nn.functional as F
 from torch_geometric.nn.conv.rgat_conv import RGATConv
 
 class HERGAST(torch.nn.Module):
+
     def __init__(self, hidden_dims, att_drop, dim_reduce='PCA'):
+
+        """
+        HERGAST model.
+
+        Parameters
+        ----------
+        hidden_dims
+            The dimension of the 1st and 2nd layer of HERGAST encoder.
+        att_drop
+            Dropout probability of the normalized attention coefficients which exposes each node to a stochastically sampled neighborhood during training.
+        dim_reduce
+            Dimentional reduction profile used as the input of HERGAST, can be 'PCA' or 'HVG'. Default is 'PCA'.
+        """
+
         super(HERGAST, self).__init__()
         [in_dim, num_hidden, out_dim] = hidden_dims
         self.conv1 = RGATConv(in_dim, num_hidden, num_relations=2, heads=1, concat=False,
@@ -28,6 +43,20 @@ class HERGAST(torch.nn.Module):
             )                  
 
     def forward(self, features, edge_index, edge_type):
+
+        """
+        Run the forward pass of HERGAST.
+
+        Parameters
+        ----------
+        features
+            The input node features. A [num_nodes, node_dim] node feature matrix.
+        edge_index
+            The edge indices.
+        edge_type
+            The one-dimensional relation type/index for each edge in `edge_index`.
+        """
+
         h1 = self.conv1(features, edge_index, edge_type)
         h1 = F.elu(h1)
         h2 = self.conv2(h1, edge_index, edge_type)

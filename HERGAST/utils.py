@@ -14,7 +14,7 @@ import contextlib
 import io
 import warnings
 
-def Transfer_pytorch_Data(adata, dim_reduction=None, center_msg='out'):
+def Transfer_Graph_Data(adata, dim_reduction=None, center_msg='out'):
     """
     Construct graph data for training.
 

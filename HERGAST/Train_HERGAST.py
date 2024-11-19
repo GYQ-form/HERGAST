@@ -3,7 +3,7 @@ import random
 from tqdm import tqdm
 import warnings
 from .HERGAST import HERGAST
-from .utils import Transfer_pytorch_Data, Batch_Data, Cal_Spatial_Net, Cal_Expression_Net
+from .utils import Transfer_Graph_Data, Batch_Data, Cal_Spatial_Net, Cal_Expression_Net
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -71,7 +71,7 @@ class Train_HERGAST:
             raise ValueError("Exp_Net is not existed! Run Cal_Expression_Net first!")
         
         # Prepare the graph data for training
-        self.data = Transfer_pytorch_Data(adata, dim_reduction=dim_reduction,center_msg=center_msg)
+        self.data = Transfer_Graph_Data(adata, dim_reduction=dim_reduction,center_msg=center_msg)
         if verbose:
             print('Size of Input: ', self.data.x.shape)
 
@@ -86,7 +86,7 @@ class Train_HERGAST:
                 Cal_Expression_Net(temp_adata, dim_reduce=dim_reduction, **exp_net_arg)
 
             # Transfer each batch data to graph data
-            data_list = [Transfer_pytorch_Data(adata, dim_reduction=dim_reduction,center_msg=center_msg) for adata in Batch_list]
+            data_list = [Transfer_Graph_Data(adata, dim_reduction=dim_reduction,center_msg=center_msg) for adata in Batch_list]
             # Create a DataLoader for the batches
             self.loader = DataLoader(data_list, batch_size=1, shuffle=True)
 

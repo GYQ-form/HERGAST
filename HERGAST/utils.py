@@ -102,57 +102,6 @@ def Transfer_Graph_Data(adata, dim_reduction=None, center_msg='out'):
 
     return data  # Return the constructed graph data
 
-# def Transfer_pytorch_Data(adata, dim_reduction=None, center_msg='out'):
-
-#     #Expression edge
-#     G_df = adata.uns['Exp_Net'].copy()
-#     cells = np.array(adata.obs_names)
-#     cells_id_tran = dict(zip(cells, range(cells.shape[0])))
-#     G_df['Cell1'] = G_df['Cell1'].map(cells_id_tran)
-#     G_df['Cell2'] = G_df['Cell2'].map(cells_id_tran)
-#     G = sp.coo_matrix((np.ones(G_df.shape[0]), (G_df['Cell1'], G_df['Cell2'])), shape=(adata.n_obs, adata.n_obs))
-#     G = G + sp.eye(G.shape[0])
-#     exp_edge = np.nonzero(G)
-
-#     #Spatial edge
-#     G_df = adata.uns['Spatial_Net'].copy()
-#     cells = np.array(adata.obs_names)
-#     cells_id_tran = dict(zip(cells, range(cells.shape[0])))
-#     G_df['Cell1'] = G_df['Cell1'].map(cells_id_tran)
-#     G_df['Cell2'] = G_df['Cell2'].map(cells_id_tran)
-#     G = sp.coo_matrix((np.ones(G_df.shape[0]), (G_df['Cell1'], G_df['Cell2'])), shape=(adata.n_obs, adata.n_obs))
-#     G = G + sp.eye(G.shape[0])
-#     spatial_edge = np.nonzero(G)
-    
-#     if dim_reduction=='PCA':
-#         feat = adata.obsm['X_pca']
-#     elif dim_reduction=='HVG':
-#         adata_Vars = adata[:, adata.var['highly_variable']]
-#         if isinstance(adata_Vars.X, csc_matrix) or isinstance(adata_Vars.X, csr_matrix):
-#             feat = adata_Vars.X.toarray()
-#         else:
-#             feat = adata_Vars.X
-#     else:
-#         if isinstance(adata.X, csc_matrix) or isinstance(adata.X, csr_matrix):
-#             feat = adata.X.toarray()
-#         else:
-#             feat = adata.X
-
-#     if center_msg=='out':
-#         data = Data(edge_index=torch.LongTensor(np.array(
-#             [np.concatenate((exp_edge[0],spatial_edge[0])),
-#             np.concatenate((exp_edge[1],spatial_edge[1]))])).contiguous(), 
-#             x=torch.FloatTensor(feat.copy()))  # .todense()
-#     else:
-#         data = Data(edge_index=torch.LongTensor(np.array(
-#             [np.concatenate((exp_edge[1],spatial_edge[1])),
-#             np.concatenate((exp_edge[0],spatial_edge[0]))])).contiguous(), 
-#             x=torch.FloatTensor(feat.copy()))
-#     edge_type = torch.zeros(exp_edge[0].shape[0]+spatial_edge[0].shape[0],dtype=torch.int64)
-#     edge_type[exp_edge[0].shape[0]:] = 1
-#     data.edge_type = edge_type
-        
-#     return data
 
 def Batch_Data(adata, num_batch_x, num_batch_y, plot_Stats=False):
     """
@@ -220,34 +169,6 @@ def Batch_Data(adata, num_batch_x, num_batch_y, plot_Stats=False):
         sns.stripplot(y='#spot/batch', data=plot_df, ax=ax, color='red', size=5)
 
     return Batch_list  # Return the list of batches
-
-# def Batch_Data(adata, num_batch_x, num_batch_y, plot_Stats=False):
-
-#     Sp_df = adata.obsm['spatial']
-
-#     batch_x_coor = np.percentile(Sp_df[:, 0], np.linspace(0, 100, num_batch_x + 1))
-#     batch_y_coor = np.percentile(Sp_df[:, 1], np.linspace(0, 100, num_batch_y + 1))
-
-#     Batch_list = []
-#     for it_x in range(num_batch_x):
-#         min_x, max_x = batch_x_coor[it_x], batch_x_coor[it_x + 1]
-#         for it_y in range(num_batch_y):
-#             min_y, max_y = batch_y_coor[it_y], batch_y_coor[it_y + 1]
-
-#             mask_x = (Sp_df[:, 0] >= min_x) & (Sp_df[:, 0] <= max_x)
-#             mask_y = (Sp_df[:, 1] >= min_y) & (Sp_df[:, 1] <= max_y)
-#             mask = mask_x & mask_y
-
-#             temp_adata = adata[mask].copy()
-#             if temp_adata.shape[0] > 10:
-#                 Batch_list.append(temp_adata)
-            
-#     if plot_Stats:
-#         f, ax = plt.subplots(figsize=(1, 3))
-#         plot_df = pd.DataFrame([x.shape[0] for x in Batch_list], columns=['#spot/batch'])
-#         sns.boxplot(y='#spot/batch', data=plot_df, ax=ax)
-#         sns.stripplot(y='#spot/batch', data=plot_df, ax=ax, color='red', size=5)
-#     return Batch_list
 
 
 def Cal_Spatial_Net(adata, rad_cutoff=None, k_cutoff=4, model='KNN', verbose=True):
@@ -319,61 +240,6 @@ def Cal_Spatial_Net(adata, rad_cutoff=None, k_cutoff=4, model='KNN', verbose=Tru
     # Save the spatial network DataFrame into the AnnData object
     adata.uns['Spatial_Net'] = KNN_df  # Store the constructed spatial network
 
-# def Cal_Spatial_Net(adata, rad_cutoff=None, k_cutoff=4, model='KNN', verbose=True):
-#     """
-#     Construct the spatial neighbor networks.
-
-#     Parameters
-#     ----------
-#     adata
-#         AnnData object of scanpy package.
-#     rad_cutoff
-#         radius cutoff when model='Radius'
-#     k_cutoff
-#         The number of nearest neighbors when model='KNN'.
-#         This parameter determines the maximun resource usage (time and memory), you can reduce the parameter for more efficient training, but the model's performance may be slightly influenced.
-#     model
-#         The network construction model. When model=='Radius', the spot is connected to spots whose distance is less than rad_cutoff. When model=='KNN', the spot is connected to its first k_cutoff nearest neighbors.
-    
-#     Returns
-#     -------
-#     The spatial networks are saved in adata.uns['Spatial_Net']
-#     """
-
-#     assert model in ['Radius', 'KNN']
-#     if verbose:
-#         print('------Calculating spatial graph...')
-    
-#     coor = adata.obsm['spatial']
-#     num_cells = coor.shape[0]
-
-#     if model == 'Radius':
-#         nbrs = NearestNeighbors(radius=rad_cutoff).fit(coor)
-#         distances, indices = nbrs.radius_neighbors(coor, return_distance=True)
-#     elif model == 'KNN':
-#         nbrs = NearestNeighbors(n_neighbors=k_cutoff + 1).fit(coor)
-#         distances, indices = nbrs.kneighbors(coor)
-
-#     # Build the network
-#     KNN_list = [
-#         (i, indices[i][j], distances[i][j])
-#         for i in range(num_cells)
-#         for j in range(len(indices[i]))
-#         if distances[i][j] > 0
-#     ]
-
-#     KNN_df = pd.DataFrame(KNN_list, columns=['Cell1', 'Cell2', 'Distance'])
-
-#     # Map indices to cell names
-#     id_cell_trans = np.array(adata.obs.index)
-#     KNN_df['Cell1'] = id_cell_trans[KNN_df['Cell1']]
-#     KNN_df['Cell2'] = id_cell_trans[KNN_df['Cell2']]
-
-#     if verbose:
-#         print(f'Spatial graph contains {KNN_df.shape[0]} edges, {adata.n_obs} cells.')
-#         print(f'{KNN_df.shape[0] / adata.n_obs:.4f} neighbors per cell on average.')
-
-#     adata.uns['Spatial_Net'] = KNN_df
 
 def Cal_Expression_Net(adata, k_cutoff=3, dim_reduce=None, verbose=True):
     """
@@ -456,53 +322,6 @@ def Cal_Expression_Net(adata, k_cutoff=3, dim_reduce=None, verbose=True):
     # Save the expression network DataFrame into the AnnData object
     adata.uns['Exp_Net'] = KNN_df  # Store the constructed expression network
 
-# def Cal_Expression_Net(adata, k_cutoff=3, dim_reduce=None, verbose=True):
-
-#     if verbose:
-#         print('------Calculating Expression simalarity graph...')
-
-#     if dim_reduce=='PCA':
-#         coor = adata.obsm['X_pca']
-#     elif dim_reduce=='HVG':
-#         adata_Vars = adata[:, adata.var['highly_variable']]
-#         if isinstance(adata_Vars.X, csc_matrix) or isinstance(adata_Vars.X, csr_matrix):
-#             feat = adata_Vars.X.toarray()
-#         else:
-#             feat = adata_Vars.X
-#         coor = pd.DataFrame(feat)
-#         coor.index = adata.obs.index
-#         coor.columns = adata.var_names[adata.var['highly_variable']]
-#         adata.obsm['HVG'] = coor
-#     else:
-#         warnings.warn("No dimentional reduction method specified, using all genes' expression to calculate expression similarity network.")
-#         if isinstance(adata.X, csc_matrix) or isinstance(adata.X, csr_matrix):
-#             feat = adata.X.toarray()
-#         else:
-#             feat = adata.X
-#         coor = feat
-
-#     n_nbrs = k_cutoff+1 if k_cutoff+1<coor.shape[0] else coor.shape[0]
-#     nbrs = sklearn.neighbors.NearestNeighbors(n_neighbors=n_nbrs).fit(coor)
-#     distances, indices = nbrs.kneighbors(coor)
-#     KNN_list = [
-#         (i, indices[i][j], distances[i][j])
-#         for i in range(coor.shape[0])
-#         for j in range(len(indices[i]))
-#         if distances[i][j] > 0
-#     ]
-
-#     KNN_df = pd.DataFrame(KNN_list, columns=['Cell1', 'Cell2', 'Distance'])
-
-#     # Map indices to cell names
-#     id_cell_trans = np.array(adata.obs.index)
-#     KNN_df['Cell1'] = id_cell_trans[KNN_df['Cell1']]
-#     KNN_df['Cell2'] = id_cell_trans[KNN_df['Cell2']]
-
-#     if verbose:
-#         print(f'Expression graph contains {KNN_df.shape[0]} edges, {adata.n_obs} cells.')
-#         print(f'{KNN_df.shape[0] / adata.n_obs:.4f} neighbors per cell on average.')
-
-#     adata.uns['Exp_Net'] = KNN_df
     
 def cal_metagene(adata, gene_list, obs_name='metagene', layer=None, normalize=True):
     """
@@ -546,20 +365,6 @@ def cal_metagene(adata, gene_list, obs_name='metagene', layer=None, normalize=Tr
 
     # Store the calculated metagene expression in the AnnData object's observations
     adata.obs[obs_name] = metagene_expression
-
-# def cal_metagene(adata,gene_list,obs_name='metagene',layer=None):
-
-#     if layer is not None:
-#         gene_expressions = adata[:, gene_list].layers[layer]
-#     else:
-#         gene_expressions = adata[:, gene_list].X
-
-#     if sp.issparse(gene_expressions):
-#         gene_expressions = gene_expressions.toarray()
-
-#     metagene_expression = np.sum(gene_expressions, axis=1)
-
-#     adata.obs[obs_name] = metagene_expression
 
 
 def simulate_ST(sc_adata, spatial_df, sc_type_col='ann_level_3', sp_type_col='domain', disperse_frac=0.3):
@@ -639,6 +444,7 @@ def simulate_ST(sc_adata, spatial_df, sc_type_col='ann_level_3', sp_type_col='do
     simulated_adata.obs[sc_type_col].iloc[replace_indices] = dispersed_type
     
     return simulated_adata
+
 
 def simulate_gene(lambda_val=0.7, spots=10000, se=50, ns=50, type='ZINB', se_p=0.3, 
             se_size=10, se_mu=10, ns_p=0.3, ns_size=5, ns_mu=5, ptn='2_ring.png',

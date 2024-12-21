@@ -212,7 +212,7 @@ class Train_HERGAST:
         # Save reconstructed output if requested
         if save_reconstrction:
             ReX = out.to('cpu').numpy()
-            if self.dim_reduction == 'HVG':
+            if self.dim_reduction != 'PCA':
                 idx = np.where(self.adata.X==0)
                 ReX[idx] = 0
             self.adata.obsm['HERGAST_ReX'] = ReX
@@ -266,8 +266,8 @@ class Train_HERGAST:
         z,out =  self.model(gdata.x, gdata.edge_index, gdata.edge_type)
         HERGAST_rep = z.to('cpu').detach().numpy()
         self.adata.obsm['HERGAST'] = HERGAST_rep
-        if self.dim_reduction == 'HVG':
-            ReX = out.to('cpu').numpy()
+        if self.dim_reduction != 'PCA':
+            ReX = out.to('cpu').detach().numpy()
             idx = np.where(self.adata.X==0)
             ReX[idx] = 0
             self.adata.obsm['HERGAST_ReX'] = ReX

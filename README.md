@@ -1,4 +1,5 @@
 # HERGAST
+[![DOI](https://zenodo.org/badge/817575211.svg)](https://doi.org/10.5281/zenodo.15000094)
 
 HERGAST: High-resolution Enhanced Relational Graph Attention Network for Spatial Transcriptomics [[paper]](https://doi.org/10.1101/2024.08.09.607422)
 

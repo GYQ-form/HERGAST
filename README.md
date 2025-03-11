@@ -12,12 +12,13 @@ This document will help you easily go through the HERGAST model.
 The required Python packages and versions tested in our study are:
 
 ```
-pytorch==2.1.2
-scanpy==1.9.6
-scikit-learn==1.3.2
-pyg==2.4.0
-scipy==1.11.4
-numba==0.58.1
+pytorch==2.4.1
+scanpy==1.10.3
+scikit-learn==1.5.2
+pyg==2.6.1
+scipy==1.14.1
+numpy==2.0.1
+pandas==2.2.3
 ```
 
 ## Installation
